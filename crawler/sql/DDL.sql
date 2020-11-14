@@ -23,5 +23,5 @@ CREATE TABLE news_collecting_log
     update_datetime                 TIMESTAMP DEFAULT now(),
     download_execution_time         TIME,
     error_message                   TEXT
-    PRIMARY KEY (created_date, category, article_url)
+    PRIMARY KEY (news_id)
     );
