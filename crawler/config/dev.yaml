@@ -5,8 +5,8 @@ s3_crewled_parquet:
 s3_crawled_parquet_region:
 
 # RDS settings
-mysql_database: 
-mysql_host: 
-mysql_port: 
-mysql_user: 
-mysql_password: 
+postgresql_database: newsdesk
+postgresql_host: newsdeskdb.ct0guinjlxs2.ap-northeast-2.rds.amazonaws.com
+postgresql_port: 5432
+postgresql_user: newsdesk
+postgresql_password: ybigtaengineering
