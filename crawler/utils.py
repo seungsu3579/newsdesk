@@ -7,7 +7,7 @@ import time
 from random import uniform
 from datetime import datetime
 
-import pymysql as pm
+import psycopg2 as pg
 from config import CONFIG
 
 def logging_time(original_fn):
@@ -137,13 +137,13 @@ class ConnectionStore(object):
         self.execution_date = datetime.utcnow().strftime('%Y-%m-%d')
 
     def connect_databases(self):
-        con_mysql = pm.connect(host=self.config_host,
+        conn_postgre = pg.connect(host=self.config_host,
                                user=self.config_user,
                                password=self.config_password,
                                port=self.config_port,
                                database=self.config_databases,)
-        con_mysql.autocommit = True
-        return con_mysql
+        conn_postgre.autocommit = True
+        return conn_postgre
 
     def restore_connection(self):
         self.close_connection()
@@ -162,7 +162,7 @@ class ConnectionStore(object):
             cur=con_mysql.cursor()
             cur.execute(query)
             return cur
-        return wrapper
+        return wrapper()
     
     ## example format : INSERT INTO Customers (CustomerName, City, Country) VALUES ('Cardinal', 'Stavanger', 'Norway');
     ## origin val : columns or table.columns /  new val: excluded.columns
@@ -208,10 +208,9 @@ class DataManager:
         return fomat_query_values_with_parenthesis   
 
 if __name__ == "__main__":
-    mysql_connect = ConnectionStore(CONFIG["mysql_database"],
-                                   CONFIG["mysql_host"],
-                                   CONFIG["mysql_port"],
-                                   CONFIG["mysql_user"],
-                                   CONFIG["mysql_password"],)
-    mysql_connect.execute_query("""
-                                CREATE TABLE hello (id INT)""")       
+    postgresql_connection = ConnectionStore(CONFIG["postgresql_database"],
+                                   CONFIG["postgresql_host"],
+                                   CONFIG["postgresql_port"],
+                                   CONFIG["postgresql_user"],
+                                   CONFIG["postgresql_password"],)
+    print(postgresql_connection.execute_query("""SELECT 'hello world!!'""").fetchone()[0])
