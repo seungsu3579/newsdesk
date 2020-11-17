@@ -15,13 +15,13 @@ CREATE TABLE news_collecting_log
     );
 
 -- new desk crawling log
-CREATE TABLE news_collecting_log
+CREATE TABLE news_crawling_log
 (
     news_id                         BIGINT,
     retrieve_datetime               TIMESTAMP,
     download_datetime               TIMESTAMP,
     update_datetime                 TIMESTAMP DEFAULT now(),
     download_execution_time         TIME,
-    error_message                   TEXT
+    error_message                   TEXT,
     PRIMARY KEY (news_id)
     );
