@@ -20,4 +20,4 @@
 
 키워드를 뽑기 : tokenizer(spark ko nlp)
 
-문서 벡터화 :
+문서 벡터화 : https://www.analyticsvidhya.com/blog/2020/08/top-4-sentence-embedding-techniques-using-python/
