@@ -1,0 +1,13 @@
+# created by virtualenv automatically
+
+# vscode
+.vscode
+
+# pycache
+__pycache__
+
+# venv
+venv
+
+# mac
+.DS_Store
