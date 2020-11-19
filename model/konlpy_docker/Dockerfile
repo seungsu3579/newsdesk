@@ -7,7 +7,7 @@ ENV LANG=C.UTF-8
 ENV TZ=Asia/Seoul
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends tzdata g++ git curl
+    apt-get install -y --no-install-recommends tzdata g++ git curl vim
 
 # java stuff
 RUN apt-get install -y default-jdk default-jre
@@ -35,5 +35,10 @@ RUN pip install jpype1-py3 konlpy
 RUN cd /workspace && \
     curl -s https://raw.githubusercontent.com/konlpy/konlpy/master/scripts/mecab.sh | bash -s
 
-# entry
-ENTRYPOINT ["python"]
+# install jupyter
+RUN pip3 install jupyter
+RUN jupyter notebook --generate-config -y
+RUN echo "c.NotebookApp.allow_root =True" >> /root/.jupyter/jupyter_notebook_config.py
+RUN echo "c.NotebookApp.open_browser = False" >> /root/.jupyter/jupyter_notebook_config.py
+RUN echo "c.NotebookApp.ip = '*'" >> /root/.jupyter/jupyter_notebook_config.py
+
