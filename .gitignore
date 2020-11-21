@@ -1,4 +1,14 @@
+# jupyter notebook
 .ipynb_checkpoints
 **/ipynb_checkpoints
+
+# mac
 .DS_Store
 **/.DS_store
+
+# python
+**/__pycache__
+__pycache__
+
+# w2v model
+**/*.model
