@@ -22,10 +22,11 @@ def scan_vocabulary(sents, tokenize=None, min_count=2):
         Vocabulary to index mapper.
     """
     counter = Counter(w for sent in sents for w in tokenize(sent))
-    counter = {w:c for w,c in counter.items() if c >= min_count}
-    idx_to_vocab = [w for w, _ in sorted(counter.items(), key=lambda x:-x[1])]
-    vocab_to_idx = {vocab:idx for idx, vocab in enumerate(idx_to_vocab)}
+    counter = {w: c for w, c in counter.items() if c >= min_count}
+    idx_to_vocab = [w for w, _ in sorted(counter.items(), key=lambda x: -x[1])]
+    vocab_to_idx = {vocab: idx for idx, vocab in enumerate(idx_to_vocab)}
     return idx_to_vocab, vocab_to_idx
+
 
 def tokenize_sents(sents, tokenize):
     """
@@ -41,6 +42,7 @@ def tokenize_sents(sents, tokenize):
     tokenized sentence list : list of list of str
     """
     return [tokenize(sent) for sent in sents]
+
 
 def vectorize(tokens, vocab_to_idx):
     """

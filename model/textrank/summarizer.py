@@ -1,7 +1,7 @@
 import numpy as np
-from .rank import pagerank
-from .sentence import sent_graph
-from .word import word_graph
+from rank import pagerank
+from sentence import sent_graph
+from word import word_graph
 
 
 class KeywordSummarizer:
@@ -28,9 +28,19 @@ class KeywordSummarizer:
     verbose : Boolean
         If True, it shows training progress
     """
-    def __init__(self, sents=None, tokenize=None, min_count=2,
-        window=-1, min_cooccurrence=2, vocab_to_idx=None,
-        df=0.85, max_iter=30, verbose=False):
+
+    def __init__(
+        self,
+        sents=None,
+        tokenize=None,
+        min_count=2,
+        window=-1,
+        min_cooccurrence=2,
+        vocab_to_idx=None,
+        df=0.85,
+        max_iter=30,
+        verbose=False,
+    ):
 
         self.tokenize = tokenize
         self.min_count = min_count
@@ -58,12 +68,18 @@ class KeywordSummarizer:
         None
         """
 
-        g, self.idx_to_vocab = word_graph(sents,
-            self.tokenize, self.min_count,self.window,
-            self.min_cooccurrence, self.vocab_to_idx, self.verbose)
+        g, self.idx_to_vocab = word_graph(
+            sents,
+            self.tokenize,
+            self.min_count,
+            self.window,
+            self.min_cooccurrence,
+            self.vocab_to_idx,
+            self.verbose,
+        )
         self.R = pagerank(g, self.df, self.max_iter, bias).reshape(-1)
         if self.verbose:
-            print('trained TextRank. n words = {}'.format(self.R.shape[0]))
+            print("trained TextRank. n words = {}".format(self.R.shape[0]))
 
     def keywords(self, topk=30):
         """
@@ -77,8 +93,8 @@ class KeywordSummarizer:
         keywords : list of tuple
             Each tuple stands for (word, rank)
         """
-        if not hasattr(self, 'R'):
-            raise RuntimeError('Train textrank first or use summarize function')
+        if not hasattr(self, "R"):
+            raise RuntimeError("Train textrank first or use summarize function")
         idxs = self.R.argsort()[-topk:]
         keywords = [(self.idx_to_vocab[idx], self.R[idx]) for idx in reversed(idxs)]
         return keywords
@@ -124,9 +140,19 @@ class KeysentenceSummarizer:
     verbose : Boolean
         If True, it shows training progress
     """
-    def __init__(self, sents=None, tokenize=None, min_count=2,
-        min_sim=0.3, similarity=None, vocab_to_idx=None,
-        df=0.85, max_iter=30, verbose=False):
+
+    def __init__(
+        self,
+        sents=None,
+        tokenize=None,
+        min_count=2,
+        min_sim=0.3,
+        similarity=None,
+        vocab_to_idx=None,
+        df=0.85,
+        max_iter=30,
+        verbose=False,
+    ):
 
         self.tokenize = tokenize
         self.min_count = min_count
@@ -154,11 +180,18 @@ class KeysentenceSummarizer:
         -------
         None
         """
-        g = sent_graph(sents, self.tokenize, self.min_count,
-            self.min_sim, self.similarity, self.vocab_to_idx, self.verbose)
+        g = sent_graph(
+            sents,
+            self.tokenize,
+            self.min_count,
+            self.min_sim,
+            self.similarity,
+            self.vocab_to_idx,
+            self.verbose,
+        )
         self.R = pagerank(g, self.df, self.max_iter, bias).reshape(-1)
         if self.verbose:
-            print('trained TextRank. n sentences = {}'.format(self.R.shape[0]))
+            print("trained TextRank. n sentences = {}".format(self.R.shape[0]))
 
     def summarize(self, sents, topk=30, bias=None):
         """
@@ -187,9 +220,15 @@ class KeysentenceSummarizer:
         n_sents = len(sents)
         if isinstance(bias, np.ndarray):
             if bias.shape != (n_sents,):
-                raise ValueError('The shape of bias must be (n_sents,) but {}'.format(bias.shape))
+                raise ValueError(
+                    "The shape of bias must be (n_sents,) but {}".format(bias.shape)
+                )
         elif bias is not None:
-            raise ValueError('The type of bias must be None or numpy.ndarray but the type is {}'.format(type(bias)))
+            raise ValueError(
+                "The type of bias must be None or numpy.ndarray but the type is {}".format(
+                    type(bias)
+                )
+            )
 
         self.train_textrank(sents, bias)
         idxs = self.R.argsort()[-topk:]
