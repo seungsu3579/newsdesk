@@ -1,7 +1,10 @@
 from time import time
 from functools import wraps
 from typing import Callable
+
+from bs4 import BeautifulSoup
 from requests import HTTPError
+import requests
 from random import random
 import time
 from random import uniform
@@ -24,6 +27,16 @@ def logging_time(original_fn):
         return result
     return wrapper
 
+def get_document(url):
+    headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+            'Accept-Encoding': 'gzip,deflate, br',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
+        }
+    response = requests.get(url, headers=headers)
+    document = BeautifulSoup(response.content, 'html.parser')
+    return document
 
 class BackOff:
     def __init__(self,
@@ -153,13 +166,13 @@ class ConnectionStore(object):
         self.connection.close()
     
     def execute_query(self, query):
-        @BackOff(max_tries=3, 
-                 retry_action=self.restore_connection,
-                 method='Exponential', 
-                 sleep_time=2)
+        # @BackOff(max_tries=3, 
+        #          retry_action=self.restore_connection,
+        #          method='Exponential', 
+        #          sleep_time=2)
         def wrapper(*args, **kwargs):
-            con_mysql=self.connection
-            cur=con_mysql.cursor()
+            connection=self.connection
+            cur=connection.cursor()
             cur.execute(query)
             return cur
         return wrapper()
@@ -169,7 +182,6 @@ class ConnectionStore(object):
     def upsert(self, table_name, columns_list, values_list, action_on_conflict='update'):
         values_list = list(set(values_list))
         values = ','.join(values_list)
-        query = ''
         if action_on_conflict == 'update':
             query = f"""
             INSERT INTO {table_name} ({','.join(columns_list)}) 
@@ -183,12 +195,11 @@ class ConnectionStore(object):
             INSERT INTO {table_name} ({','.join(columns_list)})
             VALUES {values}
             ON CONFLICT ON CONSTRAINT {table_name}_unique
-            DO NOTHING
-            SET ({','.join(columns_list)}) = ({','.join(['excluded.' + x for x in columns_list])})
+            DO NOTHING;
             """
         else:
             query = f"""
-            INSERT INTO {table_name} ({','.join(columns_list)}) 
+            INSERT INTO {table_name} ({','.join(columns_list)})
             VALUES {values}
             ON CONFLICT ON CONSTRAINT {table_name}_unique
             DO UPDATE

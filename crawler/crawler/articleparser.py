@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 import re
+from utils import DataManager
 
 
 class ArticleParser(object):
@@ -31,15 +32,128 @@ class ArticleParser(object):
         return special_symbol_removed_headline
 
     @classmethod
-    def find_news_totalpage(cls, url):
+    def find_news_totalpage(cls, document):
         # 당일 기사 목록 전체를 알아냄
-        try:
-            totlapage_url = url
-            request_content = requests.get(totlapage_url)
-            document_content = BeautifulSoup(request_content.content, 'html.parser')
-            headline_tag = document_content.find('div', {'class': 'paging'}).find('strong')
-            regex = re.compile(r'<strong>(?P<num>\d+)')
-            match = regex.findall(str(headline_tag))
-            return int(match[0])
-        except Exception:
-            return 0
+        headline_tag = document.find('div', {'class': 'paging'}).find('strong')
+        regex = re.compile(r'<strong>(?P<num>\d+)')
+        match = regex.findall(str(headline_tag))
+        return int(match[0])
+
+    @staticmethod
+    def make_news_id(article_url:str) -> str:
+        
+        aid_index = article_url.find("aid=")
+        aid = article_url[aid_index+4:].split('&')[0]
+
+        sid_index = article_url.find("sid1=")
+        sid = article_url[sid_index+5:].split('&')[0]
+
+        oid_index = article_url.find("oid=")
+        oid = article_url[oid_index+4:].split('&')[0]
+
+        # if not sid.isdigit() or not aid.isdigit() or not oid.isdigit():
+        #     return None 
+
+        news_id = str(sid) + '-' + str(oid) + '-' + str(aid)
+        return news_id
+
+    @staticmethod
+    def get_target_news_id_url(document:BeautifulSoup) -> list:
+        post_temp = document.select('.newsflash_body .type06_headline li dl')
+        post_temp.extend(document.select('.newsflash_body .type06 li dl'))
+        # 각 페이지에 있는 기사들의 url 저장
+        news_id_list = []
+
+        for line in post_temp:
+            article_url = line.a.get('href')
+            news_id = ArticleParser.make_news_id(article_url)
+            if news_id is None:
+                continue
+            news_id_list.append([news_id, article_url])
+
+        return news_id_list
+
+    @staticmethod
+    def get_date_from_URL(URL) -> str:
+        regex = re.compile("date=(\\d+)")
+        news_date = regex.findall(URL)[0]
+        return news_date
+
+    @staticmethod
+    def get_headline_from_document(document:BeautifulSoup) -> str:
+        tag_headline = document.find_all('h3', {'id': 'articleTitle'}, {'class': 'tts_head'})
+        text_headline = ''  # 뉴스 기사 제목 초기화
+        text_headline = text_headline + ArticleParser.clear_headline(
+            str(tag_headline[0].find_all(text=True)))
+        if not text_headline:  # 공백일 경우 기사 제외 처리
+            return None
+        return text_headline
+
+    @staticmethod
+    def get_sentence_from_document(document:BeautifulSoup) -> str:
+        tag_content = document.find_all('div', {'id': 'articleBodyContents'})
+        text_sentence = ''  # 뉴스 기사 본문 초기화
+        text_sentence = text_sentence + ArticleParser.clear_content(str(tag_content[0].find_all(text=True)))
+        if not text_sentence or len(text_sentence) < 500:  # 공백일 경우 기사 제외 처리
+            return None
+        return text_sentence
+    
+    @staticmethod
+    def get_company_from_document(document:BeautifulSoup) -> str:
+        tag_company = document.find_all('meta', {'property': 'me2:category1'})
+        text_company = ''  # 언론사 초기화
+        text_company = text_company + str(tag_company[0].get('content'))
+        if not text_company:  # 공백일 경우 기사 제외 처리
+            return None
+        return text_company
+    
+    @staticmethod
+    def get_imgURL_from_document(document:BeautifulSoup) -> str:
+        image_url = document.find('span', {'class':'end_photo_org'}).find('img')['src']
+        if not image_url:
+            return None
+        return image_url
+
+    @staticmethod
+    def get_time_from_document(document:BeautifulSoup) -> str:
+        tag_time = document.find('span', {'class':'t11'}).text.split(" ")[1:]
+        news_time = " ".join(tag_time)
+        if not news_time:
+            return None
+        return news_time
+    
+    @staticmethod
+    def find_author(company_string:str) -> str:
+        company_list = company_string.split(" ")
+        front = 0
+        back = len(company_list)-1
+        while front <= back:
+            if company_list[front] == '기자' or company_list[back] == '기자':
+                author_name = company_list[front-1]
+                if len(author_name) != 3 :
+                    return None
+                else:
+                    return author_name
+                    break
+
+            front += 1
+            back -= 1
+        
+        return None
+
+
+if __name__ == "__main__":
+    headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
+            'Accept-Encoding': 'gzip,deflate,euc-kr',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36',
+        }
+    url = "http://news.naver.com/main/list.nhn?mode=LSD&mid=sec&sid1=100&date=20201115&page=9"
+    res = requests.get(url, headers=headers)
+    document = BeautifulSoup(res.text, 'html.parser')
+    # print(res.status_code)
+    # print(res.encoding)
+    # print(res.text)
+    a = ArticleParser.get_target_news_id_url(document)
+    print(a)
