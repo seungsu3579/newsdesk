@@ -38,6 +38,8 @@ class ArticleParser(object):
             if reversed_content[i:i + 2] == '.다':
                 break
             author_sentence = ''.join(reversed(reversed_content[:i]))
+
+        # 다. 이후로 시작되는 문장에서 기자 찾기
         author_sentence = author_sentence.split(' ')
         for n, word in enumerate(author_sentence):
             if word == '기자':
@@ -45,6 +47,7 @@ class ArticleParser(object):
                 author = author_sentence[n-1]
                 return author
 
+        # 마지막 문장엣 기자가 없을경우 앞문장에서 기자 찾기
         author_sentence = blank_removed_content.split(' ')[:50]
         for n, word in enumerate(author_sentence):
             if word == '기자':
