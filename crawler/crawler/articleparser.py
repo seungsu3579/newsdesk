@@ -24,6 +24,14 @@ class ArticleParser(object):
             if reversed_content[i:i + 2] == '.다':
                 content = ''.join(reversed(reversed_content[i:]))
                 break
+        content = content.split(" ")
+        for index, word in enumerate(content):
+            if word == '기자' and len(content[index-1]) == 3:
+                # 000 기자 라는 글자 본문에서 제외
+                content = content[:index-1] + content[index+1:]
+                break
+
+        content = " ".join(content)
         return content
     
     @classmethod
@@ -211,8 +219,8 @@ if __name__ == "__main__":
     print(ArticleParser.get_company_from_document(document))
     print(ArticleParser.get_company_from_document(document2))
     # article_context
-    # print(ArticleParser.get_sentence_from_document(document))
-    # print(ArticleParser.get_sentence_from_document(document2))
+    print(ArticleParser.get_sentence_from_document(document))
+    print(ArticleParser.get_sentence_from_document(document2))
     # author_name
     print(ArticleParser.get_author(document))
     print(ArticleParser.get_author(document2))
