@@ -16,7 +16,7 @@ if __name__ == '__main__':
                                    CONFIG["postgresql_password"],)
     Crawler = ArticleCrawler(connection=postgre_connection)
 
-    for d in range(11,30):
+    for d in range(1,30):
         target_date = datetime.now() - timedelta(days=d)
         year, month, day = target_date.year, target_date.month, target_date.day
         Crawler.set_date_range(year, month, day)

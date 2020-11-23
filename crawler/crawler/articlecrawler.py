@@ -52,6 +52,13 @@ class ArticleCrawler(object):
             self.date[key] = date
         logger.info(f"TARGET DATE: {self.date}")
 
+    def get_setting_date(self):
+        if self.date.get('year') is None:
+            logger.error("SET THE target date first")
+            return
+        target_date = date(**self.date)
+        return target_date
+
     def make_news_page_url(self, category_url, year, month, day):
         made_urls = []
         
@@ -84,12 +91,13 @@ class ArticleCrawler(object):
     
     def make_crawling_log_by_page(self, page_url):
         logger.info(f'Make Crawling Log By Page {page_url}')
-        columns_list = ['news_id', 'article_url', 'retrieve_datetime']
+        columns_list = ['news_id', 'article_url', 'retrieve_datetime', 'created_date']
         document = get_document(page_url)
         news_id_url_list = ArticleParser.get_target_news_id_url(document)
 
         now = datetime.utcnow()
-        values_list = [id_url + [now] for id_url in news_id_url_list]
+        target_date = self.get_setting_date()
+        values_list = [id_url + [now, target_date] for id_url in news_id_url_list]
         values_list = [DataManager.values_query_formmater(values_list=value) for value in values_list]
 
         self.connection.upsert(table_name = 'news_crawling_log',
@@ -119,6 +127,8 @@ class ArticleCrawler(object):
                 )
             for worker in concurrent.futures.as_completed(future_workers):
                 worker.result()
+
+    
 
     # def crawling(self, category_name):
     #     # Multi Process PID
@@ -275,6 +285,7 @@ if __name__ == "__main__":
     # sql_year, sql_month, sql_day = Crawler.date_loader()
     Crawler.set_date_range(2020, 11, 15)
     Crawler.today_date_loader()
+    print(Crawler.get_setting_date())
     # #오늘 날짜
     # today_year, today_month, today_day = Crawler.today_date_loader()
     # Crawler.set_date_range(today_year, today_month, today_day)
@@ -282,5 +293,5 @@ if __name__ == "__main__":
     # 날짜 설정
     # Crawler.set_date_range(2020, 8, 15)
 
-    Crawler.make_crawling_log('정치')
+    # Crawler.make_crawling_log('정치')
     

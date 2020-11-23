@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from bs4 import BeautifulSoup
 import requests
 import re
@@ -23,6 +25,33 @@ class ArticleParser(object):
                 content = ''.join(reversed(reversed_content[i:]))
                 break
         return content
+    
+    @classmethod
+    def parse_author_from_content(cls, text):
+        newline_symbol_removed_text = text.replace('\\n', '').replace('\\t', '').replace('\\r', '')
+        special_symbol_removed_content = re.sub(cls.special_symbol, ' ', newline_symbol_removed_text)
+        end_phrase_removed_content = re.sub(cls.content_pattern, '', special_symbol_removed_content)
+        blank_removed_content = re.sub(' +', ' ', end_phrase_removed_content).lstrip()  # 공백 에러 삭제
+        reversed_content = ''.join(reversed(blank_removed_content))  # 기사 내용을 reverse 한다.
+        for i in range(0, len(blank_removed_content)):
+            # reverse 된 기사 내용중, ".다"로 끝나는 경우 기사 내용이 끝난 것이기 때문에 기사 내용이 끝난 후의 광고, 기자 등의 정보는 다 지움
+            if reversed_content[i:i + 2] == '.다':
+                break
+            author_sentence = ''.join(reversed(reversed_content[:i]))
+        author_sentence = author_sentence.split(' ')
+        for n, word in enumerate(author_sentence):
+            if word == '기자':
+                # '기자' 바로 앞이 기자 이름일것
+                author = author_sentence[n-1]
+                return author
+
+        author_sentence = blank_removed_content.split(' ')[:50]
+        for n, word in enumerate(author_sentence):
+            if word == '기자':
+                author = author_sentence[n-1]
+                return author
+
+        return None
 
     @classmethod
     def clear_headline(cls, text):
@@ -109,17 +138,24 @@ class ArticleParser(object):
     
     @staticmethod
     def get_imgURL_from_document(document:BeautifulSoup) -> str:
-        image_url = document.find('span', {'class':'end_photo_org'}).find('img')['src']
+        image_url = document.find('meta', {'property':'me2:image'}).get('content')
         if not image_url:
             return None
         return image_url
 
     @staticmethod
-    def get_time_from_document(document:BeautifulSoup) -> str:
-        tag_time = document.find('span', {'class':'t11'}).text.split(" ")[1:]
-        news_time = " ".join(tag_time)
-        if not news_time:
-            return None
+    def get_datetime_from_document(document:BeautifulSoup) -> str:
+        tag_datetime = document.find('span', {'class':'t11'}).text # ex) 2020.11.23 오후 9:06 
+        date, ampm, time = tag_datetime.split(' ')
+        year, month, day = date.split(".")[:3]
+        if ampm == '오후':
+            hour = 12 + int(time.split(":")[0])
+        elif ampm == '오전':
+            hour = int(time.split(":")[0])
+        else: ## 혹시나 오전 오후가 없다면 일단은 그냥 오전이라 생각합시다!
+            hour = int(time.split(":")[0])
+        minute = int(time.split(":")[1])
+        news_time = datetime(year=int(year), month=int(month), day=int(day), hour=int(hour), minute=int(minute), second=0)
         return news_time
     
     @staticmethod
@@ -141,19 +177,39 @@ class ArticleParser(object):
         
         return None
 
+    @staticmethod
+    def get_author(document:BeautifulSoup) -> str:
+        tag_content = document.find_all('div', {'id': 'articleBodyContents'})
+        author_name = ArticleParser.parse_author_from_content(text=str(tag_content[0].find_all(text=True)))
+        return author_name
+    
+    def get_category(document):
+        pass
+
 
 if __name__ == "__main__":
-    headers = {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
-            'Accept-Encoding': 'gzip,deflate,euc-kr',
-            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36',
-        }
-    url = "http://news.naver.com/main/list.nhn?mode=LSD&mid=sec&sid1=100&date=20201115&page=9"
-    res = requests.get(url, headers=headers)
-    document = BeautifulSoup(res.text, 'html.parser')
-    # print(res.status_code)
-    # print(res.encoding)
-    # print(res.text)
-    a = ArticleParser.get_target_news_id_url(document)
-    print(a)
+    from utils import get_document
+    url = "https://news.naver.com/main/read.nhn?mode=LSD&mid=shm&sid1=103&oid=022&aid=0003525999"
+    url2 = "https://news.naver.com/main/read.nhn?mode=LSD&mid=shm&sid1=104&oid=001&aid=0012034331"
+    document = get_document(url)
+    document2 = get_document(url2)
+    # print(document)
+    # 가져와야 하는 것들 category, article_length, image_url, representative
+    # headline
+    print(ArticleParser.get_headline_from_document(document))
+    print(ArticleParser.get_headline_from_document(document2))
+    # img_url
+    print(ArticleParser.get_imgURL_from_document(document))
+    print(ArticleParser.get_imgURL_from_document(document2))
+    # created_datetime
+    print(ArticleParser.get_datetime_from_document(document))
+    print(ArticleParser.get_datetime_from_document(document2))
+    # article_company
+    print(ArticleParser.get_company_from_document(document))
+    print(ArticleParser.get_company_from_document(document2))
+    # article_context
+    # print(ArticleParser.get_sentence_from_document(document))
+    # print(ArticleParser.get_sentence_from_document(document2))
+    # author_name
+    print(ArticleParser.get_author(document))
+    print(ArticleParser.get_author(document2))
