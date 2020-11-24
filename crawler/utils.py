@@ -217,6 +217,17 @@ class DataManager:
                             for x in values_list]
         fomat_query_values_with_parenthesis = '(' + ','.join(format_str_values) + ')'
         return fomat_query_values_with_parenthesis   
+    
+    @staticmethod
+    def get_query_format_from_dict(columns_list, values_list_dict:list) -> list:
+        # make dict to query format
+        values_list = []
+        while len(values_list_dict) != 0:
+            val = values_list_dict.pop()
+            val = [val.get(key) for key in columns_list]
+            values_list.append(val)
+        values_list = [DataManager.values_query_formmater(val) for val in values_list]
+        return values_list
 
 if __name__ == "__main__":
     postgresql_connection = ConnectionStore(CONFIG["postgresql_database"],
