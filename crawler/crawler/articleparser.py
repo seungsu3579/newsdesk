@@ -181,21 +181,16 @@ class ArticleParser(object):
                     return None
                 else:
                     return author_name
-                    break
-
             front += 1
             back -= 1
         
         return None
 
     @staticmethod
-    def get_author(document:BeautifulSoup) -> str:
+    def get_author_name(document:BeautifulSoup) -> str:
         tag_content = document.find_all('div', {'id': 'articleBodyContents'})
         author_name = ArticleParser.parse_author_from_content(text=str(tag_content[0].find_all(text=True)))
         return author_name
-    
-    def get_category(document):
-        pass
 
 
 if __name__ == "__main__":
@@ -222,5 +217,5 @@ if __name__ == "__main__":
     print(ArticleParser.get_sentence_from_document(document))
     print(ArticleParser.get_sentence_from_document(document2))
     # author_name
-    print(ArticleParser.get_author(document))
-    print(ArticleParser.get_author(document2))
+    print(ArticleParser.get_author_name(document))
+    print(ArticleParser.get_author_name(document2))
