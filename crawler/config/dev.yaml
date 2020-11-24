@@ -1,8 +1,7 @@
 # S3 bucket path
-s3_crawled_csv: 
-s3_crawled_csv_region: 
-s3_crewled_parquet: 
-s3_crawled_parquet_region:
+s3_configure:
+  profile_name: "newsdesk"
+  content_bucket: "newsdesk-raw"
 
 # RDS settings
 postgresql_database: newsdesk

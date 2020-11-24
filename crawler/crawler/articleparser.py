@@ -134,7 +134,7 @@ class ArticleParser(object):
         tag_content = document.find_all('div', {'id': 'articleBodyContents'})
         text_sentence = ''  # 뉴스 기사 본문 초기화
         text_sentence = text_sentence + ArticleParser.clear_content(str(tag_content[0].find_all(text=True)))
-        if not text_sentence or len(text_sentence) < 500:  # 공백일 경우 기사 제외 처리
+        if not text_sentence or len(text_sentence) < 10:  # 공백일 경우 기사 제외 처리
             return None
         return text_sentence
     
@@ -161,6 +161,8 @@ class ArticleParser(object):
         year, month, day = date.split(".")[:3]
         if ampm == '오후':
             hour = 12 + int(time.split(":")[0])
+            if hour == 24:
+                hour = 12
         elif ampm == '오전':
             hour = int(time.split(":")[0])
         else: ## 혹시나 오전 오후가 없다면 일단은 그냥 오전이라 생각합시다!
@@ -192,6 +194,12 @@ class ArticleParser(object):
         author_name = ArticleParser.parse_author_from_content(text=str(tag_content[0].find_all(text=True)))
         return author_name
 
+    @staticmethod
+    def get_category_name(document:BeautifulSoup) -> str:
+        category = document.find('meta', {'property':'me2:category2'}).get('content')
+        if not category:
+            return None
+        return category
 
 if __name__ == "__main__":
     from utils import get_document

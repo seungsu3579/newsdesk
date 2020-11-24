@@ -8,30 +8,34 @@ import re
 import concurrent
 import time 
 import json
+import csv
 import logging
+import tempfile
 
 import requests
 from bs4 import BeautifulSoup
 import pyarrow as pa
-from pyarrow import csv, parquet
+import boto3
 from s3fs.core import S3FileSystem, aiobotocore
 
 from config import CONFIG
 from crawler.exceptions import *
-from crawler.writer import Writer
 from crawler.schema import generate_schema
 from crawler.articleparser import ArticleParser
 from utils import BackOff, logging_time, ConnectionStore, DataManager, get_document
 
 
 NAVER_URL = CONFIG['naver_news']['urls']['article_url']
-
-logger = logging.getLogger()
+S3_PROFILE_NAME = CONFIG['s3_configure']['profile_name']
+logger = logging.getLogger(__name__)
+logger.setLevel('INFO')
 
 class ArticleCrawler(object):
-    def __init__(self, connection:ConnectionStore):
+    def __init__(self, config, connection:ConnectionStore):
         self.categories = {'정치': 100, '경제': 101, '사회': 102, '생활문화': 103, '세계': 104, 'IT과학': 105, '오피니언': 110}
         self.connection = connection
+        self.s3_profile = config['s3_configure']['profile_name']
+        self.s3_bucket = config['s3_configure']['content_bucket']
         self.selected_categories = []
         self.date = {'year': 0, 'month': 0, 'day': 0}
         self.user_operating_system = str(platform.system())
@@ -128,139 +132,91 @@ class ArticleCrawler(object):
             for worker in concurrent.futures.as_completed(future_workers):
                 worker.result()
 
-    
-
-    # def crawling(self, category_name):
-    #     # Multi Process PID
-    #     logger.info(category_name + " PID: " + str(os.getpid()))
-
-    #     writer = Writer(category_name=category_name, date=self.date)
-    #     wcsv = writer.get_writer_csv()
-    #     wcsv.writerow(["date", "time", "category", "company", "author", "headline", "sentence", "content_url", "image_url"])
+    def get_data_from_article_url(self, news_id:str, article_url:str) -> dict:
         
+        document = get_document(article_url)
 
-    #     # 기사 URL 형식
-    #     url = "http://news.naver.com/main/list.nhn?mode=LSD&mid=sec&sid1=" + str(
-    #         self.categories.get(category_name)) + "&date="
+        article_headline = ArticleParser.get_headline_from_document(document)
+        img_url = ArticleParser.get_imgURL_from_document(document)
+        created_datetime = ArticleParser.get_datetime_from_document(document)
+        article_company = ArticleParser.get_company_from_document(document)
+        reporter_name = ArticleParser.get_author_name(document)
+        content = ArticleParser.get_sentence_from_document(document)
+        content_length = len(content) if content is not None else 0
+        category = ArticleParser.get_category_name(document)
 
-    #     # start_year년 start_month월 ~ end_year의 end_month 날짜까지 기사를 수집합니다.
-    #     day_urls = self.make_news_page_url(url, self.date['year'], self.date['month'], self.date['day'])
-    #     logger.info(category_name + " Urls are generated")
-    #     logger.info("The crawler starts")
+        return dict(news_id=news_id,
+                    article_url=article_url,
+                    created_datetime=created_datetime, 
+                    category=category, 
+                    article_haedline=article_headline,
+                    article_company=article_company,
+                    reporter_name=reporter_name,
+                    article_length=content_length,
+                    image_url=img_url,
+                    content=content)
+    
+    def get_download_target(self, category:str) -> list:
+        category_num = self.categories.get(category, None)
+        if category_num is None:
+            raise Exception(message='must input collect category')
+        query = f"""
+                SELECT news_id, article_url FROM news_crawling_log
+                WHERE created_date = '{self.get_setting_date()}'
+                  AND news_id LIKE '{category_num}-%'
+                  AND download_status = 'NOT DONE'
+                """
+        target_news = self.connection.execute_query(query).fetchall()
+        return target_news
+    
+    def crawl_category(self, category:str) -> (list, list):
+        target_news = self.get_download_target(category)[:30]
+        metadata_list = list()
+        content_list = list()
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            future_workers = []
+            for news_id, news_url in target_news:
+                future_workers.append(
+                    pool.submit(self.get_data_from_article_url, news_id, news_url)
+                )
+            for worker in concurrent.futures.as_completed(future_workers):
+                result = worker.result()
+                content_list.append(dict(news_id=result.get('news_id'), 
+                                         content=result.get('content')))
+                del result['content']
+                metadata_list.append(result)
 
-    #     with concurrent.futures.ThreadPoolExecutor() as pool:
-    #         futureWorkers = []
-    #         for URL in day_urls:
-    #             futureWorkers.append(pool.submit(
-    #                 self.get_page_and_write_row,
-    #                 category_name,
-    #                 writer,
-    #                 URL,
-    #             ))
-    #         for future in concurrent.futures.as_completed(futureWorkers):
-    #             print(future.result())
-    #     writer.close()
+        return content_list, metadata_list
 
-
-    # def get_page_and_write_row(self, category_name, writer, URL):
-    #     news_date = self.get_date_from_URL(URL)
-
-    #     request = self.get_url_data(URL)
-    #     document = BeautifulSoup(request.content, 'html.parser')
-
-    #     # html - newsflash_body - type06_headline, type06
-    #     # 각 페이지에 있는 기사들 가져오기
-    #     post_temp = document.select('.newsflash_body .type06_headline li dl')
-    #     post_temp.extend(document.select('.newsflash_body .type06 li dl'))
-
-    #     # 각 페이지에 있는 기사들의 url 저장
-    #     post = []
-    #     for line in post_temp:
-    #         post.append(line.a.get('href'))  # 해당되는 page에서 모든 기사들의 URL을 post 리스트에 넣음
-    #     del post_temp
-
-    #     for content_url in post:  # 기사 URL
-    #         # 크롤링 대기 시간
-    #         sleep(0.01)
-
-    #         # 기사 HTML 가져옴
-    #         request_content = self.get_url_data(content_url)
-    #         try:
-    #             document_content = BeautifulSoup(request_content.content, 'html.parser')
-    #         except:
-    #             continue
-
-
-    #         try:
-    #             # 기사 제목 가져옴
-    #             text_headline = ArticleParser.get_headline_from_document(document_content)
-    #             # 기사 본문 가져옴
-    #             text_sentence = ArticleParser.get_sentence_from_document(document_content)
-    #             # 기사 언론사 가져옴
-    #             text_company = ArticleParser.get_company_from_document(document_content)
-    #             # 기사 이미지 가져옴
-    #             image_url = ArticleParser.get_imgURL_from_document(document_content)
-    #             # 기사 시간 가져옴
-    #             news_time = ArticleParser.get_time_from_document(document_content)
-    #             # 기자 가져옴
-    #             author_name = ArticleParser.find_author(text_sentence)
-
-    #             # CSV 작성
-    #             wcsv = writer.get_writer_csv()
-    #             wcsv.writerow([news_date, news_time, category_name, text_company, author_name, text_headline, text_sentence, content_url, image_url])
-                
-    #             del text_company, text_sentence, text_headline
-    #             del image_url
-    #             del request_content, document_content
-    #             return("DONE")
-                
-    #         except Exception as e:  # UnicodeEncodeError ..
-    #             # wcsv.writerow([ex, content_url])
-    #             del request_content, document_content
-    #             return(f"ERROR : {e}")
-
-    # def date_loader(self):
-    #     with open("/Users/jungyulyang/programming/hell-news/config/credential.json") as json_file:
-    #         json_data = json.load(json_file)
-
-    #     db = pymysql.connect(
-    #         user = json_data['user'],
-    #         passwd = json_data['passwd'],
-    #         host = json_data['host'],
-    #         charset = json_data['charset']
-    #     )
-
-    #     cursor = db.cursor(pymysql.cursors.DictCursor)
-    #     cursor.execute('USE news_crawling')
-
-    #     sql = "select dates from only_date"
-    #     cursor.execute(sql)
-    #     rows = cursor.fetchall()
-    #     sql_data = str(rows[0])
-
-    #     numbers = re.findall("\d+", sql_data)
-    #     sql_year = int(numbers[0])
-    #     sql_month = int(numbers[1])
-    #     sql_day = int(numbers[2])
-
-    #     sql = "delete from only_date limit 1"
-    #     cursor.execute(sql)
-    #     db.commit()
-
-    #     return sql_year, sql_month, sql_day
+    def upload_s3_csv(self, category:str, content_list:list):
+        session = boto3.Session(profile_name=S3_PROFILE_NAME)
+        s3 = session.client('s3')
+        date = self.get_setting_date()
+        s3_fname = f"{category}/{date}.csv"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv',encoding='utf-8', newline='') as fp:
+            writer = csv.writer(fp)
+            writer.writerow(["news_id", "content"])
+            for data in content_list:
+                writer.writerow([data.get('news_id'), data.get('content')])
+            s3.upload_file(fp.name, self.s3_bucket, s3_fname)
+        return 
+    
+    
+    def crawl_all_categries(self, categories:str) -> str:
+        for category in categories:
+            logger.info(f'[CRAWLING] {category} START')
+            content_list, metadata_list = self.crawl_category(category)
+            logger.info(f'[CRAWLING] {category} DOWNLOAD DATA IS DONE')
+            columns_list = metadata_list[0].keys()
+            metadata_list = DataManager.get_query_format_from_dict(columns_list=columns_list,
+                                                                values_list_dict=metadata_list)
+            # self.connection.upsert(table_name='news_metadata', values_list=metadata_list, action_on_conflict='update')
+            logger.info(f'[CRAWLING] {category} UPDATE META DATA IS DONE')
+            self.upload_s3_csv(category, content_list)
+            logger.info(f'[CRAWLING] {category} UPLOAD CONTENT DATA IS DONE')
 
 
-    # def start(self):
-    #     # MultiProcess 크롤링 시작
-    #     with concurrent.futures.ProcessPoolExecutor() as process:
-    #         futureWorkers = []
-    #         for category_name in self.selected_categories:
-    #             futureWorkers.append(process.submit(
-    #                 self.crawling,
-    #                 category_name
-    #             ))
-    #         for future in concurrent.futures.as_completed(futureWorkers):
-    #             print(future.result())
+
 
     def today_date_loader(self):
         today = date.today()
@@ -278,14 +234,15 @@ if __name__ == "__main__":
                                    CONFIG["postgresql_port"],
                                    CONFIG["postgresql_user"],
                                    CONFIG["postgresql_password"],)
-    Crawler = ArticleCrawler(connection=postgre_connection)
+    Crawler = ArticleCrawler(config=CONFIG, connection=postgre_connection)
     Crawler.set_category("정치",)
 
     # 날짜 하나씩 불러올때
     # sql_year, sql_month, sql_day = Crawler.date_loader()
     Crawler.set_date_range(2020, 11, 15)
     Crawler.today_date_loader()
-    print(Crawler.get_setting_date())
+    Crawler.crawl_all_categries(['경제','정치'])
+
     # #오늘 날짜
     # today_year, today_month, today_day = Crawler.today_date_loader()
     # Crawler.set_date_range(today_year, today_month, today_day)
