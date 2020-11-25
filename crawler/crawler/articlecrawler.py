@@ -149,7 +149,7 @@ class ArticleCrawler(object):
                     article_url=article_url,
                     created_datetime=created_datetime, 
                     category=category, 
-                    article_haedline=article_headline,
+                    article_headline=article_headline,
                     article_company=article_company,
                     reporter_name=reporter_name,
                     article_length=content_length,
@@ -170,7 +170,7 @@ class ArticleCrawler(object):
         return target_news
     
     def crawl_category(self, category:str) -> (list, list):
-        target_news = self.get_download_target(category)[:30]
+        target_news = self.get_download_target(category)[:50]
         metadata_list = list()
         content_list = list()
         with concurrent.futures.ThreadPoolExecutor() as pool:
@@ -210,7 +210,7 @@ class ArticleCrawler(object):
             columns_list = metadata_list[0].keys()
             metadata_list = DataManager.get_query_format_from_dict(columns_list=columns_list,
                                                                 values_list_dict=metadata_list)
-            # self.connection.upsert(table_name='news_metadata', values_list=metadata_list, action_on_conflict='update')
+            self.connection.upsert(table_name='news_metadata', columns_list=columns_list, values_list=metadata_list, action_on_conflict='update')
             logger.info(f'[CRAWLING] {category} UPDATE META DATA IS DONE')
             self.upload_s3_csv(category, content_list)
             logger.info(f'[CRAWLING] {category} UPLOAD CONTENT DATA IS DONE')
@@ -235,11 +235,10 @@ if __name__ == "__main__":
                                    CONFIG["postgresql_user"],
                                    CONFIG["postgresql_password"],)
     Crawler = ArticleCrawler(config=CONFIG, connection=postgre_connection)
-    Crawler.set_category("정치",)
 
     # 날짜 하나씩 불러올때
     # sql_year, sql_month, sql_day = Crawler.date_loader()
-    Crawler.set_date_range(2020, 11, 15)
+    Crawler.set_date_range(2020, 11, 14)
     Crawler.today_date_loader()
     Crawler.crawl_all_categries(['경제','정치'])
 

@@ -53,12 +53,14 @@ class ArticleParser(object):
             if word == '기자':
                 # '기자' 바로 앞이 기자 이름일것
                 author = author_sentence[n-1]
+                if author == '한경닷컴' and n >= 2:
+                    author = author_sentence[n-2]
                 return author
 
         # 마지막 문장엣 기자가 없을경우 앞문장에서 기자 찾기
         author_sentence = blank_removed_content.split(' ')[:50]
         for n, word in enumerate(author_sentence):
-            if word == '기자':
+            if word == '기자' or word == '기자.' or word == '기자가' or word == '특파원':
                 author = author_sentence[n-1]
                 return author
 
@@ -203,8 +205,9 @@ class ArticleParser(object):
 
 if __name__ == "__main__":
     from utils import get_document
-    url = "https://news.naver.com/main/read.nhn?mode=LSD&mid=shm&sid1=103&oid=022&aid=0003525999"
-    url2 = "https://news.naver.com/main/read.nhn?mode=LSD&mid=shm&sid1=104&oid=001&aid=0012034331"
+    url = "https://news.naver.com/main/read.nhn?mode=LSD&mid=sec&sid1=101&oid=422&aid=0000456798" # 기자. 
+    url2 = "https://news.naver.com/main/read.nhn?mode=LSD&mid=shm&sid1=104&oid=001&aid=0012034331" # 한경닷컴
+    url3 = "https://news.naver.com/main/read.nhn?mode=LSD&mid=sec&sid1=100&oid=052&aid=0001514158" # 보도합니다
     document = get_document(url)
     document2 = get_document(url2)
     # print(document)
