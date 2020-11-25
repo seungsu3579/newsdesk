@@ -21,14 +21,14 @@ from s3fs.core import S3FileSystem, aiobotocore
 from config import CONFIG
 from crawler.exceptions import *
 from crawler.schema import generate_schema
+from crawler.python_logger import get_logger
 from crawler.articleparser import ArticleParser
 from utils import BackOff, logging_time, ConnectionStore, DataManager, get_document
 
 
 NAVER_URL = CONFIG['naver_news']['urls']['article_url']
 S3_PROFILE_NAME = CONFIG['s3_configure']['profile_name']
-logger = logging.getLogger(__name__)
-logger.setLevel('INFO')
+logger = get_logger(__name__)
 
 class ArticleCrawler(object):
     def __init__(self, config, connection:ConnectionStore):
@@ -170,7 +170,7 @@ class ArticleCrawler(object):
         return target_news
     
     def crawl_category(self, category:str) -> (list, list):
-        target_news = self.get_download_target(category)[:50]
+        target_news = self.get_download_target(category)
         metadata_list = list()
         content_list = list()
         with concurrent.futures.ThreadPoolExecutor() as pool:
