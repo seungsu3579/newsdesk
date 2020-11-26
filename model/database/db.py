@@ -80,3 +80,11 @@ def get_preprocessed_news_ids():
     sql = "SELECT * FROM news_extracted"
 
     return queryall(sql)
+
+
+def get_header(news_id):
+
+    sql = "SELECT ne.news_id, nm.article_headline, ne.keyword, ne.key_sentence FROM news_extracted ne\
+            LEFT JOIN news_metadata nm on ne.news_id = nm.news_id WHERE ne.news_id = %s"
+
+    return queryone(sql, (news_id,))
