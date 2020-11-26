@@ -57,12 +57,22 @@ class WordToVector:
         print("model trained")
 
     def vectorize(self, word):
-        return self.model.wv[word]
+        try:
+            v = self.model.wv[word]
+            return tuple([True, v])
+        except:
+            v = 0
+            return tuple([False, v])
 
     def vectorize_word_list(self, words):
         vector = 0
-
         for word in words:
-            vector += self.vectorize(word)
+            v = self.vectorize(word)
+            if v[0]:
+                vector += v[1]
+            else:
+                words.remove(word)
+            
+             
 
         return vector / len(words)
