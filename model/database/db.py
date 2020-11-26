@@ -50,3 +50,18 @@ def newly_inserted_list():
         ON ne.news_id = nm.news_id WHERE ne.keyword IS NULL"
 
     return queryall(sql)
+
+
+def get_keyword_keysentence(news_id):
+
+    """
+    input :
+        news_id : 뉴스 아이디 
+    return :
+        keyword, keysentence info
+    function :
+        중요 키워드와 문장을 리턴
+    """
+    sql = "SELECT * FROM news_extracted WHERE news_id = %s"
+
+    return queryone(sql, (news_id,))
