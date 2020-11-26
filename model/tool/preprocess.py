@@ -1,7 +1,7 @@
 import sys, os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 from konlpy.tag import Mecab
 import pandas as pd
@@ -9,22 +9,13 @@ from tqdm import tqdm
 import numpy as np
 import re
 import warnings
-
 warnings.filterwarnings("ignore")
-
 
 class Preprocess:
     def __init__(self):
         self.mecab = Mecab()
         ## s3 directory
         # self.directory = ''
-
-    def data_loader(self, file):
-        df = pd.read_csv(file, header=None)
-        df.columns = ["article"]
-        df = df.drop_duplicates("article")
-        df.reset_index(inplace=True, drop=True)
-        return df
 
     def sentence_process(self, df):
         df["sentence"] = [df["article"][i].split(". ") for i in range(len(df))]
@@ -42,25 +33,30 @@ class Preprocess:
 
         return df
 
-    def load_stopwords(self):
-        filename = os.path.join(PATH, "tool/stop_words.csv")
-        temp = pd.read_csv(filename, header=None, usecols=[0], names=["stopwords"])
-        stopwords = {temp["stopwords"][i]: i for i in range(len(temp))}
-        return stopwords
-
     def mecab_tokenizer(self, sent):
-        stopwords = self.load_stopwords()
         words = self.mecab.pos(sent, join=True)
-        words = [w for w in words if w.split("/")[0] not in stopwords]
         words = [
             w for w in words if ("/NN" in w or "/XR" in w or "/VA" in w or "/VV" in w)
         ]
         return words
 
+    def upload_s3_csv(self):
+        session = boto3.Session(profile_name=S3_PROFILE_NAME)
+        s3 = session.client('s3')
+        date = self.get_setting_date()
+        s3_fname = f"{category}/{date}.csv"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv',encoding='utf-8', newline='') as fp:
+            writer = csv.writer(fp)
+            writer.writerow(["news_id", "content"])
+            for data in content_list:
+                writer.writerow([data.get('news_id'), data.get('content')])
+            s3.upload_file(fp.name, self.s3_bucket, s3_fname)
+        return 
+    
 
 if __name__ == "__main__":
     pre = Preprocess()
     # for loop file_list
     df = pre.data_loader("./tmp/test.csv")
     df = pre.sentence_process(df)
-    stopwords = pre.load_stopwords()
+

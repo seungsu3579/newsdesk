@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+    app:
+        image: python:3
+        ports: 
+            - 8123:8123
+        # command: sudo mkdir /root/test
+        volumes:
+            - ./:/test
+        working_dir: /test
