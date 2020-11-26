@@ -1,8 +1,8 @@
 from collections import defaultdict
 from scipy.sparse import csr_matrix
 
-from utils import scan_vocabulary
-from utils import tokenize_sents
+from .utils import scan_vocabulary
+from .utils import tokenize_sents
 
 
 def word_graph(

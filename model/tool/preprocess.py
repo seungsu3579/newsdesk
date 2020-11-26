@@ -1,7 +1,7 @@
 import sys, os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 from konlpy.tag import Mecab
 import pandas as pd
@@ -9,6 +9,7 @@ from tqdm import tqdm
 import numpy as np
 import re
 import warnings
+import boto3
 
 warnings.filterwarnings("ignore")
 
@@ -43,7 +44,6 @@ class Preprocess:
         return df
 
     def mecab_tokenizer(self, sent):
-        stopwords = self.load_stopwords()
         words = self.mecab.pos(sent, join=True)
         words = [
             w for w in words if ("/NN" in w or "/XR" in w or "/VA" in w or "/VV" in w)
@@ -56,4 +56,4 @@ if __name__ == "__main__":
     # for loop file_list
     df = pre.data_loader("./tmp/test.csv")
     df = pre.sentence_process(df)
-    stopwords = pre.load_stopwords()
+

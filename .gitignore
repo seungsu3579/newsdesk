@@ -12,3 +12,5 @@ __pycache__
 
 # w2v model
 **/*.model
+
+#s3 confidential

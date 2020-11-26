@@ -5,8 +5,8 @@ import scipy as sp
 from scipy.sparse import csr_matrix
 from sklearn.metrics import pairwise_distances
 
-from utils import scan_vocabulary
-from utils import tokenize_sents
+from .utils import scan_vocabulary
+from .utils import tokenize_sents
 
 
 def sent_graph(

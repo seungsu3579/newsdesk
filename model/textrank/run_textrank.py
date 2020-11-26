@@ -1,19 +1,19 @@
 import sys, os
 from tqdm import tqdm
 import pandas as pd
-from summarizer import KeysentenceSummarizer
-from summarizer import KeywordSummarizer
-from tool import preprocess
-from ...crawler.crawler.articlecrawler import upload_s3_csv
+from .summarizer import KeysentenceSummarizer
+from .summarizer import KeywordSummarizer
+from tool.preprocess import Preprocess
+# from ...crawler.crawler.articlecrawler import upload_s3_csv
 
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class RunTextRank(object):
     def __init__(self):
-        self.preprocess = preprocess.Preprocess()
+        self.preprocess = Preprocess()
         self.sentence_summarizer = KeysentenceSummarizer(
             tokenize=self.preprocess.mecab_tokenizer, min_sim=0.5, verbose=False
         )
@@ -45,7 +45,7 @@ class RunTextRank(object):
         data["keyword"] = word_list
 
         return data
-
+        
 
 if __name__ == "__main__":
     run = RunTextRank()

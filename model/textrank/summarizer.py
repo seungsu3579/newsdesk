@@ -1,7 +1,7 @@
 import numpy as np
-from rank import pagerank
-from sentence import sent_graph
-from word import word_graph
+from .rank import pagerank
+from .sentence import sent_graph
+from .word import word_graph
 
 
 class KeywordSummarizer:
