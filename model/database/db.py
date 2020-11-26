@@ -14,7 +14,7 @@ def insert_keyword_keysentence(news_id, key_sentence, keyword):
     """
 
     sql = "INSERT INTO news_extracted VALUES (%s, %s, %s)"
-    execute(sql, (news_id, key_sentence, keyword,))
+    return execute(sql, (news_id, key_sentence, keyword,))
 
 
 def is_analysis(news_id):
