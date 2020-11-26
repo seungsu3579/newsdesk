@@ -42,7 +42,8 @@ def newly_inserted_list():
     function : 
         새롭게 keyword analysis 해야 할 리스트
     """
-    sql = "SELECT nm.news_id, nm.created_datetime, nm.category FROM news_metadata nm LEFT OUTER JOIN news_extracted ne ON ne.news_id = nm.news_id WHERE ne.keyword IS NULL"
+    sql = "SELECT nm.news_id, date(nm.created_datetime), nm.category \
+        FROM news_metadata nm LEFT OUTER JOIN news_extracted ne \
+        ON ne.news_id = nm.news_id WHERE ne.keyword IS NULL"
 
     return queryall(sql)
-
