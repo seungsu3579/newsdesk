@@ -1,0 +1,13 @@
+import logging
+import os
+import sys
+
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s [%(name)s] : %(message)s',
+                    datefmt="%Y-%m-%d %H:%M:%S")
+
+def get_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    adapter = logging.LoggerAdapter(logger=logger, extra=dict(app_name="newsdesk"))
+    return adapter
