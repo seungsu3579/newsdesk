@@ -12,7 +12,9 @@ def insert_keyword_keysentence(news_id, key_sentence, keyword):
     function :
         news_extracted 테이블에 분석된 키워드를 삽입
     """
-    pass
+    
+    sql = "INSERT INTO news_extracted VALUES (%s, %s, %s)"
+    execute(sql, (news_id, key_sentence, keyword,))
 
 
 def is_analysis(news_id):
@@ -25,4 +27,12 @@ def is_analysis(news_id):
         이 뉴스가 키워드 분석이 되었는지 여부
     """
 
-    pass
+    sql = "SELECT news_id FROM news_extracted WHERE news_id = %s"
+
+    if queryone(sql, (news_id, )):
+        return True
+    else:
+        return False
+
+
+def 
