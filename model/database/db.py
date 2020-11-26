@@ -13,8 +13,11 @@ def insert_keyword_keysentence(news_id, key_sentence, keyword):
         news_extracted 테이블에 분석된 키워드를 삽입
     """
 
-    sql = "INSERT INTO news_extracted VALUES (%s, %s, %s)"
-    return execute(sql, (news_id, key_sentence, keyword,))
+    if not is_analysis(news_id):
+        sql = "INSERT INTO news_extracted VALUES (%s, %s, %s)"
+        return execute(sql, (news_id, key_sentence, keyword,))
+    else:
+        return 
 
 
 def is_analysis(news_id):
