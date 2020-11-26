@@ -62,3 +62,18 @@ def get_keyword_keysentence(news_id):
     sql = "SELECT * FROM news_extracted WHERE news_id = %s"
 
     return queryone(sql, (news_id,))
+
+
+def get_preprocessed_news_ids(news_id):
+
+    """
+    input :
+        news_id : 뉴스 아이디 
+    return :
+        keyword, keysentence info
+    function :
+        중요 키워드와 문장을 리턴
+    """
+    sql = "SELECT * FROM news_extracted"
+
+    return queryall(sql)
