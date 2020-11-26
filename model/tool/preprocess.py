@@ -42,16 +42,9 @@ class Preprocess:
 
         return df
 
-    def load_stopwords(self):
-        filename = os.path.join(PATH, "tool/stop_words.csv")
-        temp = pd.read_csv(filename, header=None, usecols=[0], names=["stopwords"])
-        stopwords = {temp["stopwords"][i]: i for i in range(len(temp))}
-        return stopwords
-
     def mecab_tokenizer(self, sent):
         stopwords = self.load_stopwords()
         words = self.mecab.pos(sent, join=True)
-        words = [w for w in words if w.split("/")[0] not in stopwords]
         words = [
             w for w in words if ("/NN" in w or "/XR" in w or "/VA" in w or "/VV" in w)
         ]

@@ -1,16 +1,13 @@
 import sys, os
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
 from tqdm import tqdm
 import pandas as pd
-
-
 from summarizer import KeysentenceSummarizer
 from summarizer import KeywordSummarizer
 from tool import preprocess
+
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class RunTextRank(object):
