@@ -1,4 +1,4 @@
-from textrank import run_textrank
+from wordToVector import WordToVector
 
-run = run_textrank.RunTextRank()
-df = run.data_saver("./tmp/test.csv")
+w = WordToVector()
+w.update_model("./tmp/test.csv")

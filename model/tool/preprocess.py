@@ -9,23 +9,13 @@ from tqdm import tqdm
 import numpy as np
 import re
 import warnings
-import boto3
-
 warnings.filterwarnings("ignore")
-
 
 class Preprocess:
     def __init__(self):
         self.mecab = Mecab()
         ## s3 directory
         # self.directory = ''
-
-    def data_loader(self, file):
-        df = pd.read_csv(file, header=None)
-        df.columns = ["article"]
-        df = df.drop_duplicates("article")
-        df.reset_index(inplace=True, drop=True)
-        return df
 
     def sentence_process(self, df):
         df["sentence"] = [df["article"][i].split(". ") for i in range(len(df))]
@@ -50,6 +40,19 @@ class Preprocess:
         ]
         return words
 
+    def upload_s3_csv(self):
+        session = boto3.Session(profile_name=S3_PROFILE_NAME)
+        s3 = session.client('s3')
+        date = self.get_setting_date()
+        s3_fname = f"{category}/{date}.csv"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv',encoding='utf-8', newline='') as fp:
+            writer = csv.writer(fp)
+            writer.writerow(["news_id", "content"])
+            for data in content_list:
+                writer.writerow([data.get('news_id'), data.get('content')])
+            s3.upload_file(fp.name, self.s3_bucket, s3_fname)
+        return 
+    
 
 if __name__ == "__main__":
     pre = Preprocess()

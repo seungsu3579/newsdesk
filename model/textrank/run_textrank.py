@@ -4,6 +4,7 @@ import pandas as pd
 from .summarizer import KeysentenceSummarizer
 from .summarizer import KeywordSummarizer
 from tool.preprocess import Preprocess
+from tool.s3_connect import S3_connector
 # from ...crawler.crawler.articlecrawler import upload_s3_csv
 
 
@@ -13,16 +14,17 @@ from tool.preprocess import Preprocess
 
 class RunTextRank(object):
     def __init__(self):
-        self.preprocess = Preprocess()
+        self.s3_connect = S3_connector()
         self.sentence_summarizer = KeysentenceSummarizer(
             tokenize=self.preprocess.mecab_tokenizer, min_sim=0.5, verbose=False
         )
         self.word_summarizer = KeywordSummarizer(
-            tokenize=self.preprocess.mecab_tokenizer, min_count=5, min_cooccurrence=2
+            tokenize=self.preprocess.mecab_tokenizer, min_count=3, min_cooccurrence=2
         )
 
     def run_data_loader(self, file):
-        data = self.preprocess.data_loader(file)
+        s3 = self.s3_connect.get_client()
+        self.s3_connect.get_session()
         data_result = self.preprocess.sentence_process(data)
         return data_result
 
@@ -31,16 +33,19 @@ class RunTextRank(object):
         return sentence
 
     def get_keyword(self, sent: list):
-        keyword = self.word_summarizer.summarize(sent, topk=5)
+        keyword = self.word_summarizer.summarize(sent, topk=3)
         return keyword
 
     def data_saver(self, file):
         sentence_list = []
         word_list = []
         data = self.run_data_loader(file=file)
+        data.reset_index(drop=True, inplace=True)
         for i_index in tqdm(range(len(data))):
-            sentence_list.append(self.get_keysentence(data["sentence"][i_index]))
-            word_list.append(self.get_keyword(data["sentence"][i_index]))
+            sent = [sentence[2] for sentence in self.get_keysentence(data["sentence"][i_index])]
+            sentence_list.append(sent)
+            word = [word[0].split('/')[0] for word in self.get_keyword(data["sentence"][i_index])]
+            word_list.append(word)
         data["keysentence"] = sentence_list
         data["keyword"] = word_list
 
