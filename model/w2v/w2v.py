@@ -42,9 +42,6 @@ class WordToVector:
         df = pre.data_loader(file)
         df = pre.sentence_process(df)
 
-        # get stopwords
-        stopwords = pre.load_stopwords()
-
         news_tokens = []
         # for i in tqdm(range(len(df))):
         for i in tqdm(range(10)):

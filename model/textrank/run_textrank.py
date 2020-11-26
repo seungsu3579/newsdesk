@@ -4,6 +4,7 @@ import pandas as pd
 from summarizer import KeysentenceSummarizer
 from summarizer import KeywordSummarizer
 from tool import preprocess
+from ...crawler.crawler.articlecrawler import upload_s3_csv
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -37,12 +38,12 @@ class RunTextRank(object):
         sentence_list = []
         word_list = []
         data = self.run_data_loader(file=file)
-        data.reset_index(inplace=True, drop=True)
         for i_index in tqdm(range(len(data))):
             sentence_list.append(self.get_keysentence(data["sentence"][i_index]))
             word_list.append(self.get_keyword(data["sentence"][i_index]))
         data["keysentence"] = sentence_list
         data["keyword"] = word_list
+
         return data
 
 
