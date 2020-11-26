@@ -12,7 +12,7 @@ def insert_keyword_keysentence(news_id, key_sentence, keyword):
     function :
         news_extracted 테이블에 분석된 키워드를 삽입
     """
-    
+
     sql = "INSERT INTO news_extracted VALUES (%s, %s, %s)"
     execute(sql, (news_id, key_sentence, keyword,))
 
@@ -29,10 +29,20 @@ def is_analysis(news_id):
 
     sql = "SELECT news_id FROM news_extracted WHERE news_id = %s"
 
-    if queryone(sql, (news_id, )):
+    if queryone(sql, (news_id,)):
         return True
     else:
         return False
 
 
-def 
+def newly_inserted_list():
+    """
+    return :
+        newly inserted news list
+    function : 
+        새롭게 keyword analysis 해야 할 리스트
+    """
+    sql = "SELECT nm.news_id, nm.created_datetime, nm.category FROM news_metadata nm LEFT OUTER JOIN news_extracted ne ON ne.news_id = nm.news_id WHERE ne.keyword IS NULL"
+
+    return queryall(sql)
+
