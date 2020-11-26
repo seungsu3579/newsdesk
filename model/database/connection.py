@@ -1,20 +1,16 @@
-import pymysql
+import psycopg2 as pg
 import sys
 from config import CONFIG
 
-# PyMySQL Documentation: https://pymysql.readthedocs.io/en/latest/index.html
-
 
 def _connect():
-    connection = pymysql.connect(
+    connection = pg.connect(
         user=CONFIG["RDS_configure"]["postgresql_user"],
         password=CONFIG["RDS_configure"]["postgresql_password"],
         host=CONFIG["RDS_configure"]["postgresql_host"],
         port=CONFIG["RDS_configure"]["postgresql_port"],
-        database=CONFIG["RDS_configure"]["postgresql_database"],
-        cursorclass=pymysql.cursors.DictCursor,
+        database=CONFIG["RDS_configure"]["postgresql_database"]
     )
-
     return connection
 
 
@@ -28,9 +24,9 @@ def queryone(sql, fmt=tuple()):
     except Exception as e:
         print(e)
         raise e
-    finally:
-        cur.close()
-        conn.close()
+    
+    cur.close()
+    conn.close()
 
 
 def queryall(sql, fmt=tuple()):
@@ -43,9 +39,9 @@ def queryall(sql, fmt=tuple()):
     except Exception as e:
         print(e)
         raise e
-    finally:
-        cur.close()
-        conn.close()
+    
+    cur.close()
+    conn.close()
 
 
 def execute(sql, fmt=tuple()):
@@ -58,9 +54,9 @@ def execute(sql, fmt=tuple()):
     except Exception as e:
         print(e)
         raise e
-    finally:
-        cur.close()
-        conn.close()
+    
+    cur.close()
+    conn.close()
 
 
 def callproc(sql, fmt=tuple()):
@@ -75,6 +71,6 @@ def callproc(sql, fmt=tuple()):
     except Exception as e:
         print(e)
         raise e
-    finally:
-        cur.close()
-        conn.close()
+    
+    cur.close()
+    conn.close()

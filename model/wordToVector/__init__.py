@@ -31,7 +31,7 @@ class WordToVector:
         self.workers = 4
         self.sg = 0
 
-    def update_model(self, file):
+    def update_model(self, df):
         """
         Input : list of word list  preprocessed sentences
         """
@@ -40,14 +40,11 @@ class WordToVector:
         mecab = Mecab()
 
         # load new data
-        df = pre.data_loader(file)
         df = pre.sentence_process(df)
 
         news_tokens = []
-        # for i in tqdm(range(len(df))):
-        for i in tqdm(range(10)):
+        for i in range(len(df)):
             for sentence in df["sentence"][i]:
-                print(sentence)
                 news_tokens.append(
                     list(map(lambda x: x.split("/")[0], pre.mecab_tokenizer(sentence)))
                 )
@@ -56,3 +53,5 @@ class WordToVector:
 
         self.model.build_vocab(news_tokens, update=True)
         self.model.train(news_tokens, total_examples=len(news_tokens), epochs=10)
+
+        print("model trained")

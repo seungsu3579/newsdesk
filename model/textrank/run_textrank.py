@@ -5,6 +5,7 @@ from .summarizer import KeysentenceSummarizer
 from .summarizer import KeywordSummarizer
 from tool.preprocess import Preprocess
 from tool.s3_connect import S3_connector
+from database import db
 # from ...crawler.crawler.articlecrawler import upload_s3_csv
 
 
