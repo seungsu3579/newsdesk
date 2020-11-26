@@ -84,7 +84,7 @@ def get_preprocessed_news_ids():
 
 def get_header(news_id):
 
-    sql = "SELECT ne.news_id, nm.article_headline, ne.keyword, ne.key_sentence FROM news_extracted ne\
-            LEFT JOIN news_metadata nm on ne.news_id = nm.news_id WHERE ne.news_id = %s"
+    sql = "SELECT ne.news_id, nm.article_headline, ne.keyword, ne.key_sentence FROM (SELECT ne.news_id, ne.keyword, ne.keysentence FROM news_extracted ne WHERE ne.news_id = %s)\
+            LEFT JOIN news_metadata nm on ne.news_id = nm.news_id"
 
     return queryone(sql, (news_id,))
