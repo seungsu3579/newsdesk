@@ -15,6 +15,7 @@ from tool.s3_connect import S3_connector
 class RunTextRank(object):
     def __init__(self):
         self.s3_connect = S3_connector()
+        self.preprocess = Preprocess()
         self.sentence_summarizer = KeysentenceSummarizer(
             tokenize=self.preprocess.mecab_tokenizer, min_sim=0.5, verbose=False
         )
@@ -22,9 +23,13 @@ class RunTextRank(object):
             tokenize=self.preprocess.mecab_tokenizer, min_count=3, min_cooccurrence=2
         )
 
-    def run_data_loader(self, file):
+    def key_extractor(self, prefix=''):
         s3 = self.s3_connect.get_client()
-        self.s3_connect.get_session()
+        keys = self.s3_connect.get_all_newsdata_key(prefix)
+        return keys
+
+    def run_data_loader(self, key: str):
+        data = self.s3_connect.get_newsdata(key)
         data_result = self.preprocess.sentence_process(data)
         return data_result
 
@@ -33,18 +38,18 @@ class RunTextRank(object):
         return sentence
 
     def get_keyword(self, sent: list):
-        keyword = self.word_summarizer.summarize(sent, topk=3)
+        keyword = self.word_summarizer.summarize(sent, topk=10)
         return keyword
 
-    def data_saver(self, file):
+    def data_saver(self, key):
         sentence_list = []
         word_list = []
-        data = self.run_data_loader(file=file)
+        data = self.run_data_loader(key)
         data.reset_index(drop=True, inplace=True)
         for i_index in tqdm(range(len(data))):
             sent = [sentence[2] for sentence in self.get_keysentence(data["sentence"][i_index])]
             sentence_list.append(sent)
-            word = [word[0].split('/')[0] for word in self.get_keyword(data["sentence"][i_index])]
+            word = [word[0].split('/')[0] for word in self.get_keyword(data["sentence"][i_index]) if len(word[0].split('/')[0]) !=1 ]
             word_list.append(word)
         data["keysentence"] = sentence_list
         data["keyword"] = word_list

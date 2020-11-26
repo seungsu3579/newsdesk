@@ -18,7 +18,7 @@ class Preprocess:
         # self.directory = ''
 
     def sentence_process(self, df):
-        df["sentence"] = [df["article"][i].split(". ") for i in range(len(df))]
+        df["sentence"] = [df["content"][i].split(". ") for i in range(len(df))]
 
         # 각 문장의 길이가 20 이하인건 삭제
         for i in range(len(df)):
@@ -36,7 +36,7 @@ class Preprocess:
     def mecab_tokenizer(self, sent):
         words = self.mecab.pos(sent, join=True)
         words = [
-            w for w in words if ("/NN" in w or "/XR" in w or "/VA" in w or "/VV" in w)
+            w for w in words if ("/NN" in w or "/XR" in w or "/VA" in w or "/VV" in w) and (len(w) != 1)
         ]
         return words
 

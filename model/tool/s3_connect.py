@@ -66,7 +66,7 @@ class S3_connector:
         obj = client.get_object(Bucket=self.S3_CONTENT_BUCKET, Key=key)
 
         df = pd.read_csv(obj['Body'])
-        df.columns = ["content"]
+        df = df.dropna()
         df = df.drop_duplicates("content")
         df.reset_index(inplace=True, drop=True)
 
