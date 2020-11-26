@@ -23,7 +23,7 @@ class WordToVector:
     """
 
     def __init__(self):
-        model = path.join(path.dirname(path.abspath(__file__)) , "word2vec.model")
+        model = path.join(path.dirname(path.abspath(__file__)), "word2vec.model")
         self.model = Word2Vec.load(model)
         self.v_dimension = 300
         self.v_window = 8
@@ -55,3 +55,14 @@ class WordToVector:
         self.model.train(news_tokens, total_examples=len(news_tokens), epochs=10)
 
         print("model trained")
+
+    def vectorize(self, word):
+        return self.model.wv[word]
+
+    def vectorize_word_list(self, words):
+        vector = 0
+
+        for word in words:
+            vector += self.vectorize(word)
+
+        return vector / len(words)

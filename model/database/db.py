@@ -17,7 +17,7 @@ def insert_keyword_keysentence(news_id, key_sentence, keyword):
         sql = "INSERT INTO news_extracted VALUES (%s, %s, %s)"
         return execute(sql, (news_id, key_sentence, keyword,))
     else:
-        return 
+        return
 
 
 def is_analysis(news_id):
@@ -67,7 +67,7 @@ def get_keyword_keysentence(news_id):
     return queryone(sql, (news_id,))
 
 
-def get_preprocessed_news_ids(news_id):
+def get_preprocessed_news_ids():
 
     """
     input :
