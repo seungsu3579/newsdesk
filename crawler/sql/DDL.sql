@@ -25,3 +25,16 @@ CREATE TABLE news_crawling_log
     error_message                   TEXT,
     PRIMARY KEY (news_id)
     );
+
+-- For dev test, news_crawling_log_test. five minute test table
+
+CREATE TABLE news_crawling_log2
+(
+    news_id                         BIGINT,
+    retrieve_datetime               TIMESTAMP,
+    download_datetime               TIMESTAMP,
+    update_datetime                 TIMESTAMP DEFAULT now(),
+    download_execution_time         TIME,
+    error_message                   TEXT,
+    PRIMARY KEY (news_id)
+    );
