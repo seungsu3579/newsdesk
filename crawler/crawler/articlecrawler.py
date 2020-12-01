@@ -184,20 +184,20 @@ class ArticleCrawler(object):
             
         return news_id_url_list
 
-    def make_crawling_log_sync(self, *category_name):
+    def make_crawling_log_sync(self, category_name):
         if self.date['year'] == 0:
             logger.error('Set target date before running')
             return
         day_url_list=[]
-        for name in category_name:
-            temp_url=(NAVER_URL + str(self.categories.get(name)) + '&date=')
-            
-            day_url_list.append(self.make_news_page_url(temp_url, **self.date))
+        name = category_name
+        temp_url=NAVER_URL + str(self.categories.get(name)) + '&date='
+        
+        day_urls=self.make_news_page_url(temp_url, **self.date)
     
         logger.info('Making Crawling Log starts')
         with concurrent.futures.ThreadPoolExecutor() as pool:
             future_workers=[]
-            for page_url in day_url_list:
+            for page_url in day_urls:
                 future_workers.append(
                     pool.submit(self.make_crawling_log_by_page_sync,
                     page_url)
