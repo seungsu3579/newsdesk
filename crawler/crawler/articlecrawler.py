@@ -4,6 +4,7 @@ import os
 import platform
 from datetime import date, datetime
 import re
+import itertools
 
 import concurrent
 import time 
@@ -15,7 +16,7 @@ import tempfile
 import requests
 from bs4 import BeautifulSoup
 import pyarrow as pa
-import boto3
+#import boto3
 from s3fs.core import S3FileSystem, aiobotocore
 
 from config import CONFIG
@@ -24,6 +25,9 @@ from crawler.schema import generate_schema
 from crawler.python_logger import get_logger
 from crawler.articleparser import ArticleParser
 from utils import BackOff, logging_time, ConnectionStore, DataManager, get_document
+
+from functools import wraps
+import psycopg2 as pg
 
 
 NAVER_URL = CONFIG['naver_news']['urls']['article_url']
@@ -72,6 +76,8 @@ class ArticleCrawler(object):
             day = "0" + str(day)
         category_date_url = category_url + str(year) + str(month) + str(day)
         total_url = category_date_url + "&page=10000"
+
+     
         document = get_document(total_url)
         totalpage = ArticleParser.find_news_totalpage(document)
 
@@ -91,8 +97,9 @@ class ArticleCrawler(object):
                 time.sleep(60)
             remaining_tries = remaining_tries - 1
         raise ResponseTimeout()
+   
 
-    
+    # 대용량 크롤링시 사용하는 비동기 크롤링
     def make_crawling_log_by_page(self, page_url):
         logger.info(f'Make Crawling Log By Page {page_url}')
         columns_list = ['news_id', 'article_url', 'retrieve_datetime', 'created_date']
@@ -103,7 +110,7 @@ class ArticleCrawler(object):
         target_date = self.get_setting_date()
         values_list = [id_url + [now, target_date] for id_url in news_id_url_list]
         values_list = [DataManager.values_query_formmater(values_list=value) for value in values_list]
-
+        
         self.connection.upsert(table_name = 'news_crawling_log',
                                 columns_list = columns_list,
                                 values_list = values_list,
@@ -131,6 +138,89 @@ class ArticleCrawler(object):
                 )
             for worker in concurrent.futures.as_completed(future_workers):
                 worker.result()
+    
+    
+    #5분마다 사용하는 동기식 크롤링
+    def make_crawling_log_by_page_sync(self, page_url):
+        logger.info(f'Make Crawling Log By Page {page_url}')
+        columns_list = ['news_id', 'article_url', 'retrieve_datetime', 'created_date']
+        document = get_document(page_url)
+        # 한번에 페이지 전체 크롤링함
+        news_id_url_list = ArticleParser.get_target_news_id_url(document)
+        #news_id_url_list 여기서 id값 비교해서 소거해야힘
+        #새로운 함수 compare_crawled_N_db에서 크롤링한 데이터의 news_id와 기존 디비에 있는 값 비교
+        news_id_url_list=self.compare_crawled_N_db(news_id_url_list)
+
+        now = datetime.utcnow()
+        target_date = self.get_setting_date()
+        values_list = [id_url + [now, target_date] for id_url in news_id_url_list]
+        values_list = [DataManager.values_query_formmater(values_list=value) for value in values_list]
+        self.connection.upsert(table_name = 'news_crawling_log_test',
+                                columns_list = columns_list,
+                                values_list = values_list,
+                                action_on_conflict = 'nothing')
+                                
+        return page_url 
+
+
+    def compare_crawled_N_db(self,news_id_url_list):
+
+        # 5분전에 로그에 지금 크롤링한 뉴스 아이디가 있으면 중복이다.
+        #db에서 로그 가져오기
+        postgre_connection = ConnectionStore(CONFIG["postgresql_database"],
+                                        CONFIG["postgresql_host"],
+                                        CONFIG["postgresql_port"],
+                                        CONFIG["postgresql_user"],
+                                        CONFIG["postgresql_password"],)
+        
+        data=postgre_connection.execute_query("SELECT t.news_id \
+            FROM public.news_metadata t \
+            WHERE t.created_datetime > (NOW() - interval '10 minute');")
+        id_data=list(itertools.chain.from_iterable(data))
+        
+        for i in news_id_url_list[:]:
+            if i[0] in id_data:
+                news_id_url_list.remove(i)
+            
+        return news_id_url_list
+
+    def make_crawling_log_sync(self, *category_name):
+        if self.date['year'] == 0:
+            logger.error('Set target date before running')
+            return
+        day_url_list=[]
+        for name in category_name:
+            temp_url=(NAVER_URL + str(self.categories.get(name)) + '&date=')
+            
+            day_url_list.append(self.make_news_page_url(temp_url, **self.date))
+    
+        logger.info('Making Crawling Log starts')
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            future_workers=[]
+            for page_url in day_url_list:
+                future_workers.append(
+                    pool.submit(self.make_crawling_log_by_page_sync,
+                    page_url)
+                )
+            for worker in concurrent.futures.as_completed(future_workers):
+                worker.result()
+
+
+        ### 아래 부분은 원래인거임
+        '''category_url = NAVER_URL + str(self.categories.get(category_name)) + '&date='
+        day_urls = self.make_news_page_url(category_url, **self.date)
+
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            future_workers = []
+            for page_url in day_urls:
+                future_workers.append(
+                    pool.submit(
+                        self.make_crawling_log_by_page,
+                        page_url
+                    )
+                )
+            for worker in concurrent.futures.as_completed(future_workers):
+                worker.result()'''
 
     def get_data_from_article_url(self, news_id:str, article_url:str) -> dict:
         

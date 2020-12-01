@@ -228,7 +228,7 @@ class DataManager:
             values_list.append(val)
         values_list = [DataManager.values_query_formmater(val) for val in values_list]
         return values_list
-
+        
 if __name__ == "__main__":
     postgresql_connection = ConnectionStore(CONFIG["postgresql_database"],
                                    CONFIG["postgresql_host"],
