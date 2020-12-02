@@ -22,4 +22,3 @@ for key in tqdm(keys):
     df = run.data_saver(key)
     for i in range(len(df)):
         update_keyword_keysentence(df['news_id'][i], df['keysentence'][i], df['keyword'][i])
-        print(df['news_id'][i])
