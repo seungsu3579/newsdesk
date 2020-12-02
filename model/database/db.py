@@ -1,7 +1,7 @@
 from .connection import *
 
 
-def insert_keyword_keysentence(news_id, key_sentence, keyword):
+def update_keyword_keysentence(news_id, key_sentence, keyword):
     """
     input :
         news_id : 뉴스 아이디 
@@ -13,9 +13,9 @@ def insert_keyword_keysentence(news_id, key_sentence, keyword):
         news_extracted 테이블에 분석된 키워드를 삽입
     """
 
-    if not is_analysis(news_id):
-        sql = "INSERT INTO news_extracted VALUES (%s, %s, %s)"
-        return execute(sql, (news_id, key_sentence, keyword,))
+    if is_analysis(news_id):
+        sql = "UPDATE news_extracted SET key_sentence = %s, keyword = %s where news_id = %s"
+        return execute(sql, (key_sentence, keyword, news_id, ))
     else:
         return
 
