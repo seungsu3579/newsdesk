@@ -21,7 +21,7 @@ class RunTextRank(object):
             tokenize=self.preprocess.mecab_tokenizer, min_sim=0.5, verbose=False
         )
         self.word_summarizer = KeywordSummarizer(
-            tokenize=self.preprocess.mecab_tokenizer, min_count=3, min_cooccurrence=2
+            tokenize=self.preprocess.mecab_tokenizer, min_count=2, min_cooccurrence=2
         )
 
     def key_extractor(self, prefix=''):

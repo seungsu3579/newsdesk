@@ -72,7 +72,5 @@ class WordToVector:
                 vector += v[1]
             else:
                 words.remove(word)
-            
-             
 
         return vector / len(words)
